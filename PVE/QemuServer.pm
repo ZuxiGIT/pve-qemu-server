@@ -62,6 +62,8 @@ use PVE::QemuServer::PCI qw(print_pci_addr print_pcie_addr print_pcie_root_port 
 use PVE::QemuServer::QMPHelpers qw(qemu_deviceadd qemu_devicedel qemu_objectadd qemu_objectdel);
 use PVE::QemuServer::USB;
 
+use PVE::IntegrityControl;
+
 my $have_sdn;
 eval {
     require PVE::Network::SDN::Zones;
@@ -730,6 +732,12 @@ EODESCR
     affinity => {
 	type => 'string', format => 'pve-cpuset',
 	description => "List of host cores used to execute guest processes, for example: 0,5,8-11",
+	optional => 1,
+    },
+    'integrity_control' => {
+	type => 'boolean',
+    default => 0,
+	description => "Enable VM integrity control",
 	optional => 1,
     },
 };
@@ -5722,6 +5730,9 @@ sub vm_start_nolock {
 
     PVE::GuestHelpers::exec_hookscript($conf, $vmid, 'pre-start', 1);
 
+    if ($conf->{'integrity_control'} ) {
+    PVE::IntegrityControl::check($conf, $vmid);
+    }
     my $forcemachine = $params->{forcemachine};
     my $forcecpu = $params->{forcecpu};
     if ($resume) {

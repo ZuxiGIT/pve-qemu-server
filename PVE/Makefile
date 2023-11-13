@@ -2,7 +2,8 @@ PERLSOURCE = 			\
 	QemuServer.pm		\
 	QemuMigrate.pm		\
 	QMPClient.pm		\
-	QemuConfig.pm
+	QemuConfig.pm		\
+	IntegrityControl.pm
 
 .PHONY: install
 install:
