@@ -5728,11 +5728,11 @@ sub vm_start_nolock {
 	$ENV{PVE_MIGRATED_FROM} = $migratedfrom;
     }
 
-    PVE::GuestHelpers::exec_hookscript($conf, $vmid, 'pre-start', 1);
-
     if ($conf->{'integrity_control'} ) {
-    PVE::IntegrityControl::check($conf, $vmid);
+    PVE::IntegrityControl::check($storecfg, $conf, $vmid);
     }
+
+    PVE::GuestHelpers::exec_hookscript($conf, $vmid, 'pre-start', 1);
     my $forcemachine = $params->{forcemachine};
     my $forcecpu = $params->{forcecpu};
     if ($resume) {
