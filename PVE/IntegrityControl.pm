@@ -4,63 +4,54 @@ use Data::Dumper;
 use strict;
 use warnings;
 use PVE::QemuServer::Drive;
+use PVE::IntegrityControlConfig;
 use Sys::Guestfs;
 
 sub check {
     my ($storecfg, $conf, $vmid) = @_;
+    print "conf: ", Dumper($conf);
+    print "storecfg: ", Dumper($storecfg);
+    print "vmid: ", Dumper($vmid);
 
     my $bootdisks = PVE::QemuServer::Drive::get_bootdisks($conf);
-    my $path = '';
-    my $diskformat = '';
-    print "--------------------------\n";
+    my $g = new Sys::Guestfs();
+
     for my $bootdisk (@$bootdisks) {
         next if !PVE::QemuServer::Drive::is_valid_drivename($bootdisk);
-        next if !$conf->{$bootdisk};
         print "bootdisk $bootdisk\n";
         my $drive = PVE::QemuServer::Drive::parse_drive($bootdisk, $conf->{$bootdisk});
         next if !defined($drive);
-        print "drive: ", Dumper($drive), "\n";
         next if PVE::QemuServer::Drive::drive_is_cdrom($drive);
         my $volid = $drive->{file};
         next if !$volid;
-        print "volid ", Dumper($volid);
 	    my ($size, $format, undef, undef) =  PVE::Storage::volume_size_info($storecfg, $volid);
-        print "format: $format\n";
-        $diskformat = $format;
+        my $diskformat = $format;
 	    my ($storeid, $storevolume) = PVE::Storage::parse_volume_id($volid, 1);
-        print "storevolume: $storevolume\n";
-        print "storeid: $storeid\n";
 	    my $scfg = PVE::Storage::storage_config($storecfg, $storeid);
-        print "scfg: ", Dumper($scfg) if defined($scfg);
-        print "storecfg: ", Dumper($storecfg);
-        print "scfg->path: $scfg->{path}\n" if defined($scfg->{path});
-        print "volid: $volid\n";
-        print "drive size: $drive->{size}\n";
-        print "path: ", $path = PVE::Storage::path($storecfg, $drive->{file}), "\n";
+        print "path: ", my $diskpath = PVE::Storage::path($storecfg, $drive->{file}), "\n";
+
+        print "scfg: ", Dumper($scfg), "\n";
+        print "drive: ", Dumper($drive), "\n";
+        print "volid: ", Dumper($volid), "\n";
+
+
+        # Attach the disk image read-only to libguestfs.
+        # You could also add an optional format => ... argument here.  This is
+        # advisable since automatic format detection is insecure.
+        $g->add_drive ($diskpath, readonly => 1, format => $diskformat);
     }
-    print "--------------------------\n";
-
-    my $disk = $path;
-    my $g = new Sys::Guestfs();
-
-    # Attach the disk image read-only to libguestfs.
-    # You could also add an optional format => ... argument here.  This is
-    # advisable since automatic format detection is insecure.
-    print __LINE__ . ": here\n";
-    $g->add_drive_opts ($disk, readonly => 1, format => $diskformat);
 
     # Run the libguestfs back-end.
-    print __LINE__ . ": here\n";
     $g->launch ();
 
     # Ask libguestfs to inspect for operating systems.
-    print __LINE__ . ": here\n";
     my @roots = $g->inspect_os ();
-    print __LINE__ . ": here\n";
     if (@roots == 0) {
-        warn "inspect_vm: no operating systems found";
+        print "inspect_vm: no operating systems found in \"" . join(", ", @$bootdisks) . "\"\n";
         return;
     }
+
+    my %ic_files = PVE::IntegrityControlConfig->load_config($vmid);
 
     for my $root (@roots) {
         printf "Root device: %s\n", $root;
