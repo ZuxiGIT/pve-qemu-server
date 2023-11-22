@@ -298,6 +298,36 @@ my $meta_info_fmt = {
     },
 };
 
+sub parse_ic_file {
+    my ($file, $noerr) = @_;
+
+    print __FILE__ . ":" . __LINE__ . " file id: $file\n";
+    if ($file =~ m/^\/dev\/([a-z][a-zA-Z0-9\-\_\.]*[a-zA-Z0-9]):(.+)$/i) {
+    print "res: 1= " . $1 . " 2= " . $2;
+	return ($1, $2);
+    }
+    print "res: 1= " . $1 . " 2= " . $2;
+    return undef if $noerr;
+    die "unable to parse file ID '$file'\n" . "return params: " . Dumper(@_);
+}
+PVE::JSONSchema::register_format('pve-qm-integrity-control-file', \&parse_ic_file);
+
+my $ic_fmt = {
+    enable => {
+        default_key => 1,
+	    type => 'boolean',
+	    description => "Enable integrity control for specified files.",
+    },
+    files => {
+        optional => 1,
+        type => 'string',
+        format => 'pve-qm-integrity-control-file-list',
+	    description => "Specified files",
+        format_description => "file[;file...]",
+    },
+};
+PVE::JSONSchema::register_format('pve-qm-integrity-control', $ic_fmt);
+
 my $confdesc = {
     onboot => {
 	optional => 1,
@@ -735,10 +765,10 @@ EODESCR
 	optional => 1,
     },
     'integrity_control' => {
-	type => 'boolean',
-    default => 0,
-	description => "Enable VM integrity control",
-	optional => 1,
+	    type => 'string',
+	    format => 'pve-qm-integrity-control',
+	    description => "Enable VM integrity control for specific files",
+	    optional => 1,
     },
 };
 
