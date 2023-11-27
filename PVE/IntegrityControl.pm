@@ -51,7 +51,7 @@ sub check {
         return;
     }
 
-    my %ic_files = PVE::IntegrityControlConfig->load_config($vmid);
+    my %ic_files = PVE::QemuConfig->load_config($vmid)->{integrity_control};
 
     for my $root (@roots) {
         printf "Root device: %s\n", $root;

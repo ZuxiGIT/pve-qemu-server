@@ -37,6 +37,7 @@ use PVE::QemuServer::Memory qw(get_current_memory);
 use PVE::QemuServer::PCI;
 use PVE::QemuServer::USB;
 use PVE::QemuMigrate;
+use PVE::IntegrityControl;
 use PVE::RPCEnvironment;
 use PVE::AccessControl;
 use PVE::INotify;
@@ -1038,6 +1039,8 @@ __PACKAGE__->register_method({
 	eval { PVE::QemuConfig->create_and_lock_config($vmid, $force) };
 	die "$emsg $@" if $@;
 
+    PVE::IntegrityControlConfig->create_config($vmid);
+
 	my $restored_data = 0;
 	my $restorefn = sub {
 	    my $conf = PVE::QemuConfig->load_config($vmid);
@@ -1165,6 +1168,11 @@ __PACKAGE__->register_method({
 
 		    $conf->{lock} = 'import' if $live_import_mapping;
 
+            my $ic_conf = {};
+            if (defined($conf->{integrity_control})) {
+                $ic_conf = $conf->{integrity_control};
+            }
+            PVE::IntegrityControlConfig->write_config($vmid, $ic_conf);
 		    PVE::QemuConfig->write_config($vmid, $conf);
 		};
 		my $err = $@;
@@ -2030,6 +2038,10 @@ my $update_vm_api  = sub {
 			    if $param->{cipassword} !~ /^\$(?:[156]|2[ay])(\$.+){2}/;
 		    }
 		    $conf->{cipassword} = $param->{cipassword};
+        } elsif ($opt =~ m/^integrity_control$/) {
+		    my $old_ic_config = PVE::JSONSchema::parse_property_string('pve-qm-integrity-control', $conf->{$opt});
+		    my $new_ic_config = PVE::JSONSchema::parse_property_string('pve-qm-integrity-control', $param->{$opt});
+            $conf->{$opt} = PVE::IntegrityControlConfig::update_ic_config($vmid, $old_ic_config, $new_ic_config);
 		} else {
 		    $conf->{pending}->{$opt} = $param->{$opt};
 

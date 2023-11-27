@@ -298,19 +298,31 @@ my $meta_info_fmt = {
     },
 };
 
-sub parse_ic_file {
+sub parse_ic_files_locations {
+    my ($files, $noerr) = @_;
+
+    my $res = []; 
+    foreach my $file (PVE::Tools::split_list($files)) {
+        if ($file =~ m/^\/dev\/([a-z][a-zA-Z0-9\-\_\.]*[a-zA-Z0-9]):(.+)$/i) {
+            push @$res, { device => "/dev/$1", path => $2};
+        } else {
+            die "unable to parse file ID '$file'\n" . "return params: " . Dumper(@_);
+        }
+    }
+    return $res;
+}
+
+sub verify_ic_file {
     my ($file, $noerr) = @_;
 
     print __FILE__ . ":" . __LINE__ . " file id: $file\n";
     if ($file =~ m/^\/dev\/([a-z][a-zA-Z0-9\-\_\.]*[a-zA-Z0-9]):(.+)$/i) {
-    print "res: 1= " . $1 . " 2= " . $2;
-	return ($1, $2);
+        return $file;
     }
-    print "res: 1= " . $1 . " 2= " . $2;
     return undef if $noerr;
     die "unable to parse file ID '$file'\n" . "return params: " . Dumper(@_);
 }
-PVE::JSONSchema::register_format('pve-qm-integrity-control-file', \&parse_ic_file);
+PVE::JSONSchema::register_format('pve-qm-integrity-control-file', \&verify_ic_file);
 
 my $ic_fmt = {
     enable => {
@@ -320,10 +332,10 @@ my $ic_fmt = {
     },
     files => {
         optional => 1,
+        description => "Specified files",
+        format_description => "file[;file...]",
         type => 'string',
         format => 'pve-qm-integrity-control-file-list',
-	    description => "Specified files",
-        format_description => "file[;file...]",
     },
 };
 PVE::JSONSchema::register_format('pve-qm-integrity-control', $ic_fmt);
