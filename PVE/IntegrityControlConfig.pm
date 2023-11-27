@@ -13,7 +13,7 @@ mkdir "/etc/pve/nodes/$nodename/qemu-server/integrity-control/";
 
 PVE::Cluster::cfs_register_file(
     '/qemu-server/integrity-control/',
-    \&parse_ic_filedb, 
+    \&parse_ic_filedb,
     \&write_ic_filedb
 );
 
@@ -65,11 +65,23 @@ sub create_config {
 
 	$class->write_config($vmid, {});
 }
-sub delete_files_from_database {
-    my ($vmid, $files) = @_;
+
+sub update_file_database {
+    my ($vmid, $leave, $delete) = @_;
 
     my $files_hashes = PVE::IntegrityControlConfig->load_config($vmid);
+
+    foreach my $file (@$delete) {
+        delete $files_hashes->{$file};
+    }
+
+    foreach my $file (@$leave) {
+        $files_hashes->{$file} = '';
+    }
+
+    PVE::IntegrityControlConfig->write_config($vmid, $files_hashes);
 }
+
 sub update_ic_config {
     my ($vmid, $old_conf, $new_conf) = @_;
 
@@ -96,7 +108,7 @@ sub update_ic_config {
         push @$delete, $file unless $conf{$file};
     }
 
-    delete_files_from_database($vmid, $delete);
+    update_file_database($vmid, $leave, $delete);
 
     my $res = scalar(@$leave) > 0 ?
         PVE::JSONSchema::print_property_string(
@@ -110,7 +122,7 @@ sub update_ic_config {
             enable => 0,
         }, 'pve-qm-integrity-control');
 
-    return {}
+    return $res;
 }
 
 1;

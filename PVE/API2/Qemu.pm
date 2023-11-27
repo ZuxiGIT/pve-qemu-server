@@ -2039,8 +2039,8 @@ my $update_vm_api  = sub {
 		    }
 		    $conf->{cipassword} = $param->{cipassword};
         } elsif ($opt =~ m/^integrity_control$/) {
-		    my $old_ic_config = PVE::JSONSchema::parse_property_string('pve-qm-integrity-control', $conf->{$opt});
-		    my $new_ic_config = PVE::JSONSchema::parse_property_string('pve-qm-integrity-control', $param->{$opt});
+            my $old_ic_config = PVE::JSONSchema::parse_property_string('pve-qm-integrity-control', $conf->{$opt});
+            my $new_ic_config = PVE::JSONSchema::parse_property_string('pve-qm-integrity-control', $param->{$opt});
             $conf->{$opt} = PVE::IntegrityControlConfig::update_ic_config($vmid, $old_ic_config, $new_ic_config);
 		} else {
 		    $conf->{pending}->{$opt} = $param->{$opt};

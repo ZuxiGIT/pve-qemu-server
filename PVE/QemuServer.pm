@@ -301,7 +301,7 @@ my $meta_info_fmt = {
 sub parse_ic_files_locations {
     my ($files, $noerr) = @_;
 
-    my $res = []; 
+    my $res = [];
     foreach my $file (PVE::Tools::split_list($files)) {
         if ($file =~ m/^\/dev\/([a-z][a-zA-Z0-9\-\_\.]*[a-zA-Z0-9]):(.+)$/i) {
             push @$res, { device => "/dev/$1", path => $2};
@@ -5771,7 +5771,7 @@ sub vm_start_nolock {
     }
 
     if ($conf->{'integrity_control'} ) {
-    PVE::IntegrityControl::check($storecfg, $conf, $vmid);
+        PVE::IntegrityControl::check($storecfg, $conf, $vmid);
     }
 
     PVE::GuestHelpers::exec_hookscript($conf, $vmid, 'pre-start', 1);
