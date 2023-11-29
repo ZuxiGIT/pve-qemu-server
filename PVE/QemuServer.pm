@@ -5757,7 +5757,7 @@ sub vm_start_nolock {
     }
 
     if ($conf->{integrity_control} ) {
-        PVE::IntegrityControl::check($storecfg, $conf, $vmid);
+        PVE::IntegrityControl::check($vmid, $conf);
     }
 
     PVE::GuestHelpers::exec_hookscript($conf, $vmid, 'pre-start', 1);

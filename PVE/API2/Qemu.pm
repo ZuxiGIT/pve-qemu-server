@@ -37,6 +37,7 @@ use PVE::QemuServer::Memory qw(get_current_memory);
 use PVE::QemuServer::PCI;
 use PVE::QemuServer::USB;
 use PVE::QemuMigrate;
+use PVE::IntegrityControl;
 use PVE::IntegrityControlDB;
 use PVE::IntegrityControlConfig;
 use PVE::RPCEnvironment;
@@ -2042,9 +2043,10 @@ my $update_vm_api  = sub {
 		    }
 		    $conf->{cipassword} = $param->{cipassword};
         } elsif ($opt =~ m/^integrity_control$/) {
-            my $old_ic_config = PVE::JSONSchema::parse_property_string('pve-qm-integrity-control', $conf->{$opt});
-            my $new_ic_config = PVE::JSONSchema::parse_property_string('pve-qm-integrity-control', $param->{$opt});
+            my $old_ic_config = PVE::IntegrityControlConfig::parse_ic_config_str($conf->{$opt});
+            my $new_ic_config = PVE::IntegrityControlConfig::parse_ic_config_str($param->{$opt});
             $conf->{$opt} = PVE::IntegrityControlConfig::update_ic_config($vmid, $old_ic_config, $new_ic_config);
+            PVE::IntegrityControl::fill_absent_hashes($vmid, $conf, $conf->{$opt});
 		} else {
 		    $conf->{pending}->{$opt} = $param->{$opt};
 

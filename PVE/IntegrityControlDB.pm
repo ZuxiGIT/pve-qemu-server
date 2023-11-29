@@ -13,6 +13,7 @@ use warnings;
 use PVE::AbstractConfig;
 use PVE::Tools;
 use PVE::Cluster;
+use Data::Dumper;
 use base qw(PVE::AbstractConfig);
 
 my $nodename = PVE::INotify::nodename();
