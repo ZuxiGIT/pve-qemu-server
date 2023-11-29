@@ -298,20 +298,6 @@ my $meta_info_fmt = {
     },
 };
 
-sub parse_ic_files_locations {
-    my ($files, $noerr) = @_;
-
-    my $res = [];
-    foreach my $file (PVE::Tools::split_list($files)) {
-        if ($file =~ m/^\/dev\/([a-z][a-zA-Z0-9\-\_\.]*[a-zA-Z0-9]):(.+)$/i) {
-            push @$res, { device => "/dev/$1", path => $2};
-        } else {
-            die "unable to parse file ID '$file'\n" . "return params: " . Dumper(@_);
-        }
-    }
-    return $res;
-}
-
 sub verify_ic_file {
     my ($file, $noerr) = @_;
 
@@ -5770,7 +5756,7 @@ sub vm_start_nolock {
 	$ENV{PVE_MIGRATED_FROM} = $migratedfrom;
     }
 
-    if ($conf->{'integrity_control'} ) {
+    if ($conf->{integrity_control} ) {
         PVE::IntegrityControl::check($storecfg, $conf, $vmid);
     }
 

@@ -4,7 +4,8 @@ PERLSOURCE = 						\
 	QMPClient.pm					\
 	QemuConfig.pm					\
 	IntegrityControl.pm 			\
-	IntegrityControlConfig.pm
+	IntegrityControlConfig.pm		\
+	IntegrityControlDB.pm
 
 .PHONY: install
 install:

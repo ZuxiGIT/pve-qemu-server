@@ -37,7 +37,8 @@ use PVE::QemuServer::Memory qw(get_current_memory);
 use PVE::QemuServer::PCI;
 use PVE::QemuServer::USB;
 use PVE::QemuMigrate;
-use PVE::IntegrityControl;
+use PVE::IntegrityControlDB;
+use PVE::IntegrityControlConfig;
 use PVE::RPCEnvironment;
 use PVE::AccessControl;
 use PVE::INotify;
@@ -1039,7 +1040,7 @@ __PACKAGE__->register_method({
 	eval { PVE::QemuConfig->create_and_lock_config($vmid, $force) };
 	die "$emsg $@" if $@;
 
-    PVE::IntegrityControlConfig->create_config($vmid);
+    PVE::IntegrityControlDB->create_db($vmid);
 
 	my $restored_data = 0;
 	my $restorefn = sub {
@@ -1172,8 +1173,10 @@ __PACKAGE__->register_method({
             if (defined($conf->{integrity_control})) {
                 $ic_conf = $conf->{integrity_control};
             }
-            PVE::IntegrityControlConfig->write_config($vmid, $ic_conf);
-		    PVE::QemuConfig->write_config($vmid, $conf);
+            PVE::IntegrityControlDB->create_db($vmid, $ic_conf);
+
+            PVE::QemuConfig->write_config($vmid, $conf);
+
 		};
 		my $err = $@;
 

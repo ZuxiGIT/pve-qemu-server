@@ -46,12 +46,13 @@ sub check {
 
     # Ask libguestfs to inspect for operating systems.
     my @roots = $g->inspect_os ();
-    if (@roots == 0) {
-        print "inspect_vm: no operating systems found in \"" . join(", ", @$bootdisks) . "\"\n";
-        return;
-    }
+    die "inspect_vm: no operating systems found in \"" . join(", ", @$bootdisks) . "\"\n" if @roots == 0;
 
-    my %ic_files = PVE::QemuConfig->load_config($vmid)->{integrity_control};
+    my $ic_raw = PVE::QemuConfig->load_config($vmid)->{integrity_control};
+    my $ic_conf = PVE::JSONSchema::parse_property_string('pve-qm-integrity-control', $ic_raw);
+
+    my $ic_files = PVE::IntegrityControlConfig::parse_ic_files_locations($ic_conf->{files});
+
 
     for my $root (@roots) {
         printf "Root device: %s\n", $root;
@@ -70,6 +71,7 @@ sub check {
         # mounting the filesystems in the correct order.
         my %mps = $g->inspect_get_mountpoints ($root);
         my @mps = sort { length $a <=> length $b } (keys %mps);
+        print "mountoints of \"$root\":\n", Dumper(\%mps), "\n";
         for my $mp (@mps) {
             eval { $g->mount_ro ($mps{$mp}, $mp) };
             if ($@) {
