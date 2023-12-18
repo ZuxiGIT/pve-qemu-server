@@ -25,12 +25,14 @@ sub fill_absent_hashes {
             print "skipping $root: no files to check\n" unless exists($ic_files->{$root});
             next unless exists($ic_files->{$root});
 
+            print "root: $root\n";
             __mount_vm_disk_fs($g, $root);
 
             for my $filename (@{$ic_files->{$root}}) {
                 my $db_checksum = \$ic_db->{"$root:$filename"};
                 next unless $$db_checksum eq "";
 
+                print "filename: $filename\n";
                 die "failed to find file $root:$filename\n" unless $g->is_file ($filename);
 
                 $$db_checksum = $g->checksum("sha256", $filename);
@@ -93,6 +95,7 @@ sub __get_vm_disk_roots {
         my $diskformat = $format;
 	    my ($storeid, $storevolume) = PVE::Storage::parse_volume_id($volid, 1);
 	    my $scfg = PVE::Storage::storage_config($storecfg, $storeid);
+        print "path: ", my $diskpath = PVE::Storage::path($storecfg, $volid), "\n";
 
 
 
@@ -149,7 +152,8 @@ sub check {
                 print "added new hash $checksum for $root:$filename\n";
                 $$db_checksum = $checksum;
             } elsif ($$db_checksum ne $checksum) {
-                die "hash mismatch\nGot: $checksum\nReference:$$db_checksum\n";
+                print "hash mismatch\nGot: $checksum\nReference:$$db_checksum\n";
+                die "";
             }
         }
         # delete hash entry if everything was okey
