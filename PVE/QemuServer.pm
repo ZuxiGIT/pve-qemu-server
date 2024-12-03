@@ -739,6 +739,12 @@ EODESCR
 	description => "List of host cores used to execute guest processes, for example: 0,5,8-11",
 	optional => 1,
     },
+    'integrity_control' => {
+        type => 'boolean',
+        default => 0,
+        description => "Enable VM integrity control",
+        optional => 1,
+    },
 };
 
 my $cicustom_fmt = {
@@ -4922,6 +4928,7 @@ my $fast_plug_option = {
     'startup' => 1,
     'tags' => 1,
     'vmstatestorage' => 1,
+    'integrity_control' => 1,
 };
 
 for my $opt (keys %$confdesc_cloudinit) {
@@ -6576,7 +6583,10 @@ sub vm_resume {
 	}
 
 	if ($res->{status}) {
-	    return if $res->{status} eq 'running'; # job done, go home
+        if ($res->{status} eq 'running') {
+            PVE::GuestHelpers::exec_hookscript($conf, $vmid, 'post-start', 0);
+            return; # job done, go home
+        }
 	    $resume_cmd = 'system_wakeup' if $res->{status} eq 'suspended';
 	    $reset = 1 if $res->{status} eq 'shutdown';
 	}
@@ -6594,7 +6604,17 @@ sub vm_resume {
 
 	add_nets_bridge_fdb($conf, $vmid) if $resume_cmd eq 'cont';
 
-	mon_cmd($vmid, $resume_cmd);
+    eval { PVE::GuestHelpers::exec_hookscript($conf, $vmid, 'pre-start', 1); };
+    if ($@) {
+        my $storecfg = PVE::Storage::config();
+        # vm_stop($storecfg, $vmid, $skiplock, $nocheck, $timeout, $shutdown, $force, $keepActive, $migratedfrom)
+	    vm_stop($storecfg, $vmid, 1, undef, 5, 1, 1, undef, undef);
+        return;
+    } else {
+	    mon_cmd($vmid, $resume_cmd);
+    }
+
+    PVE::GuestHelpers::exec_hookscript($conf, $vmid, 'post-start', 0);
     });
 }
 
